@@ -1,1 +1,19 @@
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment secrets
 .env
+
+# Editor and OS files
+.DS_Store
+.vscode/
+
+# Generated audio recordings
+*.wav
