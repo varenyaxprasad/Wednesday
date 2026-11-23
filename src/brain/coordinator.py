@@ -27,9 +27,13 @@ BROWSER INTENT RULES:
 - "Open YouTube" means navigate to YouTube.
 - "Search YouTube for X" means use browser_youtube_search.
 - "Play X on YouTube" means use browser_youtube_play.
+- If Wednesday has just asked the user for a song or video title after opening YouTube, interpret the next title/query as a PLAY request.
+- In that situation, call browser_youtube_play, not browser_youtube_search.
+- Pass the complete song title and artist as the query when known.
 - Never claim a video is playing unless playback is verified.
 - If YouTube requires verification, ask the user to complete it manually.
 - Do not repeatedly retry blocked pages.
+- Wait for the playback tool result before responding.
 """
 
 SYSTEM_PROMPT += """
