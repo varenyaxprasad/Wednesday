@@ -1,135 +1,275 @@
-Wednesday --- Personal AI Assistant
-Wednesday is a voice-enabled personal AI assistant built in Python. The project combines a Groq-powered language model, a LangChain agent/coordinator, speech input and output, persistent conversation memory, and MCP tools for working with local files.
-Project status: This README documents the functionality confirmed working so far. Phone control, WhatsApp actions, YouTube playback/search integrations, and specialized agents are not presented as completed features.
-Features implemented
-LLM-powered assistant: Uses Groq with the openai/gpt-oss-120b model.
-Agent orchestration: Uses LangChain to coordinate the model, conversation history, and MCP tools.
-Voice input: Uses Whisper for speech-to-text, with Silero VAD for voice activity detection.
-Voice output: Uses Kokoro text-to-speech and afplay for audio playback on macOS.
-Persistent memory: Stores and retrieves conversation history using SQLite.
-Bounded conversation context: Loads a limited recent history (20 messages) for the assistant.
-Text mode: Supports running without voice using the --text option.
-Local file tools through MCP: The assistant can discover and use tools to list, read, and create files in its configured workspace.
-Confirmation before saving: For the implemented new-file workflow, Wednesday prepares a draft, presents/reads it to the user, and saves only after explicit approval. The user can request a revision or cancel.
-Architecture
-                 User
-                  |
-          Voice input / Text mode
-                  |
-       Whisper + Silero VAD (voice)
-                  |
-          Coordinator (LangChain)
-                  |
-        SQLite conversation memory
-                  |
-          Groq language model
-        openai/gpt-oss-120b
-                  |
-          MCP tool discovery
-                  |
-        Local Files MCP Server
-          |       |        |
-        List     Read    Create
-                           |
-                Approval confirmation
-                           |
-                  Save to workspace
-                  |
-          Kokoro text-to-speech
-                  |
-              afplay (macOS)
-Project structure
-The following is the structure confirmed during development. Add other files or folders as they exist in your current repository.
-Wednesday/
-└── src/
-    ├── brain/
-    │   ├── coordinator.py
-    │   ├── memory.py
-    │   └── llm.py
-    ├── tools/
-    │   └── local_files_server.py
-    └── voice/
-        ├── speech_to_text.py
-        ├── tts.py
-        ├── microphone.py
-        └── voice_test.py
-Technology stack
-Area                       Technology
-Programming language       Python LLM provider/model         Groq --- openai/gpt-oss-120b Agent orchestration        LangChain Tool integration           Model Context Protocol (MCP) Speech recognition         Whisper Voice activity detection   Silero VAD Text-to-speech             Kokoro Audio playback             afplay (macOS) Persistent storage         SQLite
-How the main components work
-1. Coordinator
-src/brain/coordinator.py acts as the central controller. It brings together the language model, conversation memory, voice interaction, and MCP tools. It also supports a text-only mode through the --text option.
-2. Language model
-src/brain/llm.py contains the LLM configuration used by the assistant. Wednesday uses the Groq-hosted openai/gpt-oss-120b model.
-3. Persistent memory
-src/brain/memory.py handles SQLite-based conversation memory. The coordinator loads recent history and saves exchanges so that context can be carried across interactions. The active context is bounded to 20 messages.
-4. Voice interface
-The voice components are separated under src/voice/:
-speech_to_text.py --- speech recognition using Whisper.
-microphone.py --- microphone/voice input handling, including the voice activity detection flow.
-tts.py --- speech generation using Kokoro.
-voice_test.py --- voice component testing.
-On macOS, generated speech is played using afplay.
-5. Local-files MCP server
-src/tools/local_files_server.py exposes local workspace file operations through an MCP server using standard input/output (stdio) transport. The confirmed tool capabilities include:
-Listing files in the configured workspace.
-Reading files.
-Creating new files.
-The MCP client discovers the available tools and makes them available to the LangChain-based assistant. File operations are intended to remain within the configured workspace.
-6. Safe new-file creation
-The implemented new-file workflow is confirmation-first:
-Wednesday prepares a proposed file draft.
-The draft is presented to the user (and spoken in voice mode).
-The user can approve, ask for a revision, or cancel.
-The file-save tool is called only after approval.
-The confirmed save behavior refuses to overwrite an existing file.
-Running the project
-The exact entry-point command and dependency versions should match the current repository. The coordinator was developed with both voice and text operation; text mode uses the --text option.
-Typical development setup:
-# Create and activate a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+# Wednesday — Personal AI Assistant
 
-# Install the dependencies listed by the project
+**Wednesday** is a Python-based AI-powered personal assistant designed to interact with users through natural language and execute real-world tasks using AI, voice processing, and Model Context Protocol (MCP) tools.
+
+Powered by **Groq LLM and LangChain**, Wednesday understands user instructions, determines the appropriate actions, and connects with external tools to perform tasks on the user's behalf.
+
+The project combines conversational AI, voice interaction, persistent memory, and system automation into a single personal assistant.
+
+---
+
+##  Features
+
+###  AI Intelligence
+- Groq-powered LLM for natural language understanding and response generation.
+- LangChain-based agent architecture.
+- Understands user instructions and determines when external tools are required.
+- Dynamically selects tools based on user intent.
+
+###  Voice Interaction
+- Speech-to-text using OpenAI Whisper.
+- Voice Activity Detection (VAD) using Silero VAD.
+- Text-to-speech using Kokoro TTS.
+- Supports both text-based and voice-based interaction.
+
+###  MCP Tool Integration
+Wednesday uses the **Model Context Protocol (MCP)** to connect its AI agent with external tools and services.
+
+Current integrations include:
+
+- **File System:** List, read, and create files within the permitted workspace.
+- **Browser Automation:** Open websites and interact with browser tabs.
+- **Android Device Control:** Interact with an Android device, including application-level operations.
+
+###  Persistent Memory
+- SQLite-based conversation memory.
+- Stores conversational context across interactions.
+- Allows Wednesday to maintain continuity between conversations.
+
+### System Automation
+- Open websites and browser tabs.
+- Access files within the permitted workspace.
+- Perform supported Android device operations.
+- Execute actions through connected tools rather than merely generating textual instructions.
+
+---
+
+##  Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Core development |
+| Groq | LLM inference |
+| LangChain | Agent orchestration |
+| MCP | External tool integration |
+| Whisper | Speech recognition |
+| Silero VAD | Voice activity detection |
+| Kokoro TTS | Speech generation |
+| SQLite | Persistent memory |
+| ADB | Android device interaction |
+
+---
+
+##  Architecture
+
+Wednesday follows an AI agent architecture in which the LLM acts as the decision-making component.
+
+```text
+             USER INPUT
+                  |
+          Text / Voice Input
+                  |
+          Speech-to-Text
+             (Whisper)
+                  |
+                  v
+          LANGCHAIN AGENT
+                  |
+             GROQ LLM
+                  |
+          Intent Understanding
+                  |
+          Tool Selection
+                  |
+           MCP CLIENT
+                  |
+       +----------+----------+
+       |          |          |
+       v          v          v
+    File MCP  Browser MCP  Android
+       |          |       Integration
+       v          v          v
+   File Tasks  Web Tasks  Device Tasks
+       |          |          |
+       +----------+----------+
+                  |
+            Tool Response
+                  |
+           LLM Processing
+                  |
+          Response Generation
+                  |
+          +-------+-------+
+          |               |
+       Text Output     Kokoro TTS
+                          |
+                     Voice Output
+
+          SQLite Memory
+          (Conversation Context)
+```
+
+### How Wednesday Works
+
+1. **User Input:** The user provides an instruction through text or voice.
+2. **Speech Processing:** If the input is voice, Whisper converts speech into text.
+3. **Understanding:** The LangChain agent sends the instruction to the Groq-powered LLM.
+4. **Decision Making:** The LLM determines whether the request requires a connected tool.
+5. **Tool Execution:** The MCP client connects to the appropriate MCP server and executes the requested operation.
+6. **Response:** The tool result is returned to the agent, which generates a natural-language response.
+7. **Memory:** SQLite maintains conversational context for future interactions.
+8. **Voice Output:** Kokoro TTS converts the response into speech when voice output is enabled.
+
+---
+
+##  Project Structure
+
+```text
+Wednesday/
+│
+├── src/
+│   ├── brain/
+│   │   ├── llm.py
+│   │   └── ...
+│   │
+│   ├── voice/
+│   │   ├── speech_to_text.py
+│   │   ├── tts.py
+│   │   └── ...
+│   │
+│   ├── tools/
+│   │   └── ...
+│   │
+│   └── ...
+│
+├── mcp_servers/
+│   └── ...
+│
+├── memory/
+│   └── ...
+│
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+*The directory tree is illustrative. Update it to match the actual repository structure.*
+
+---
+
+##  Installation and Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/Wednesday.git
+cd Wednesday
+```
+
+### 2. Create a Virtual Environment
+
+```bash
+python -m venv venv
+```
+
+Activate it:
+
+**macOS / Linux**
+```bash
+source venv/bin/activate
+```
+
+**Windows**
+```bash
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
-Run the coordinator using the entry-point command configured in your repository. To use text mode, pass --text to the coordinator command.
-The exact launch command, environment-variable names, and complete dependency list have not been confirmed in the project notes, so they are intentionally not guessed here.
-Configuration and security
-Keep API credentials in environment variables or a local .env file.
-Do not commit API keys, tokens, database files containing private conversations, or other secrets.
-Restrict the local-files MCP server to the intended workspace.
-Review file drafts before approving a save.
-Do not assume that a planned phone or messaging integration is active unless it has been separately configured and tested.
-Current development status
-Component                           Status
-Groq LLM integration                Implemented
-LangChain coordinator               Implemented
-Whisper speech input                Implemented
-Silero VAD                          Integrated in voice input
-Kokoro speech output                Implemented
-SQLite persistent memory            Implemented
-Recent-history limit                Implemented (20 messages)
-Text-only mode                      Implemented (--text)
-Local-files MCP connection          Implemented
-List/read/create file tools         Implemented
-Confirmation-first new-file saving  Implemented and tested in the described workflow
-Editing existing files with         Not confirmed complete approval
-Persistent pending drafts across    Not confirmed complete restarts
-Broader macOS control MCP           Planned / not confirmed complete
-Android control over same-Wi-Fi ADB Planned / not confirmed complete
-WhatsApp automation                 Not confirmed complete
-YouTube search/playback integration Example/proposed, not confirmed complete
-Specialized research, personal,     Planned / not confirmed complete communication, and knowledge agents
-Roadmap
-Potential next steps discussed during development:
-Complete and test approval-based editing of existing files.
-Decide whether pending drafts should survive application restarts.
-Expand and test macOS control tools.
-Build and test Android control through same-network ADB.
-Investigate WhatsApp workflows while retaining user confirmation for sending.
-Implement and verify YouTube search separately from playback/device control.
-Develop specialized agents for research, personal assistance, communication, and knowledge management.
-Improve speech output handling for long responses.
-These are roadmap items, not claims about currently working functionality.
-Notes
-Wednesday is under active development. This README intentionally separates confirmed working components from proposed integrations so that the project documentation reflects the actual implementation rather than the full long-term vision.
+```
+
+### 4. Configure Environment Variables
+
+Create a `.env` file in the project root.
+
+```env
+GROQ_API_KEY=your_groq_api_key
+```
+
+Add any additional configuration required by your MCP servers and voice components.
+
+Get your Groq API key from:
+
+https://console.groq.com/
+
+### 5. Configure MCP Servers
+
+Configure the MCP server connections according to the project's MCP configuration.
+
+Ensure that:
+- Required MCP servers are installed.
+- Their dependencies are available.
+- Server commands and paths are correctly configured.
+- Android device access is configured where required.
+
+### 6. Run Wednesday
+
+Run the project's main entry-point script:
+
+```bash
+python <main-entry-file>.py
+```
+
+Replace the placeholder with the actual entry-point filename.
+
+---
+
+## Security Considerations
+
+Wednesday interacts with local files, browsers, and external devices. Security is an important part of its design.
+
+- API keys and credentials should be stored in environment variables.
+- Never commit `.env` files or API keys to GitHub.
+- File operations should remain restricted to authorized workspaces.
+- Sensitive operations should require appropriate user confirmation.
+- MCP servers should only receive the permissions they need.
+
+---
+
+##  Future Improvements
+
+Potential areas of development include:
+
+- Advanced multi-agent orchestration.
+- Gmail integration and email automation.
+- Calendar and scheduling integration.
+- More advanced browser automation.
+- Improved conversational memory and context retrieval.
+- Expanded Android automation.
+- Better task planning and execution.
+- A graphical user interface.
+
+---
+
+##  Project Objective
+
+The primary objective of Wednesday is to build an intelligent personal assistant that goes beyond answering questions.
+
+Instead of simply responding to user instructions, Wednesday aims to understand intent, make decisions, interact with external tools, and execute tasks in the real world.
+
+**The vision: An AI assistant that doesn't just tell you what to do — it helps you get it done.**
+
+---
+
+##  Author
+
+**Varenya Prasad**
+
+GitHub: https://github.com/YOUR_USERNAME
+
+---
+
+*Built with Python, Groq, LangChain, MCP, and open-source voice technologies.*
