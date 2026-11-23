@@ -1,19 +1,50 @@
 
-# Python virtual environments
+# ==========================================
+# Python Virtual Environments
+# ==========================================
 .venv/
 venv/
 env/
 
-# Python cache
+# ==========================================
+# Python Cache
+# ==========================================
 __pycache__/
 *.py[cod]
 
-# Environment secrets
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
 .env
+.env.*
 
-# Editor and OS files
+!.env.example
+
+# ==========================================
+# Database & Runtime Data
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# Editor & Operating System Files
+# ==========================================
 .DS_Store
 .vscode/
+.idea/
 
-# Generated audio recordings
+# ==========================================
+# Generated Audio Files
+# ==========================================
 *.wav
+
+# ==========================================
+# Browser Sessions & Authentication
+# ==========================================
+data/browser-profile/
+
+# ==========================================
+# Logs
+# ==========================================
+*.log

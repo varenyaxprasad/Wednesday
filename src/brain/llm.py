@@ -14,7 +14,7 @@ if not token:
 model = ChatGroq(
     model="openai/gpt-oss-120b",
     api_key=token,
-    temperature=0.7,
+    temperature=0.2,
     timeout=30,
     max_retries=1,
 )
